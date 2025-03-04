@@ -1,0 +1,23 @@
+test
+Searching 127.0.0.1
+Searching complete!
+Searching 127.0.0.1
+Searching complete!
+Searching 127.0.0.1
+Port 135 is currently open!
+Port 445 is currently open!
+Port 902 is currently open!
+Port 912 is currently open!
+Port 1042 is currently open!
+Port 1043 is currently open!
+Port 5040 is currently open!
+Port 5357 is currently open!
+Port 6463 is currently open!
+Port 7680 is currently open!
+Port 9010 is currently open!
+Port 9012 is currently open!
+Port 9013 is currently open!
+Port 9080 is currently open!
+Port 9100 is currently open!
+Port 9180 is currently open!
+Searching complete!
