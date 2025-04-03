@@ -1,3 +1,5 @@
 # Telecommunication Systems (CEC460) - Class Repository
-### ERAU Prescott - For Dr. Gandur's Class
-### Code by: Taylor Hancock
+
+Work by: Tay
+
+Taught by: Dr. McNeill @ ERAU - Prescott, Spring 2025
