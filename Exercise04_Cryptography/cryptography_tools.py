@@ -5,18 +5,21 @@ Class:  CEC460 - Telecom Systems
 Assignment: EX04 - Cryptography
 """
 
+from os import path
+
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend  # for loading keys
 from cryptography.fernet import Fernet  # symmetric key encryption
 
 
-def load_private_key(key_path: str) -> None:
+KEY_LOCATION = "private_key.pem"
+
+def load_private_key(key_path: str = KEY_LOCATION) -> any:
     """Loads private key from the path or creates a new key if one is not provided"""
 
-    if os.path.exists(key_path):
+    if path.exists(key_path):
         print(f"File '{key_path}' exists.")
 
         # load signing private key from disk
@@ -25,7 +28,6 @@ def load_private_key(key_path: str) -> None:
                 signing_key = serialization.load_pem_private_key(
                     key_file.read(),
                     password=None,
-                    backend=default_backend()
                 )
             print("Successfully loaded signing key")
 
@@ -50,3 +52,7 @@ def load_private_key(key_path: str) -> None:
         with open(key_path, 'w') as f:
             f.write(signing_str)
             f.close()
+    
+    return signing_key
+
+load_private_key()

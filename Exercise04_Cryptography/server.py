@@ -6,15 +6,15 @@ Assignment: EX04 - Cryptography
 """
 
 import socket as sock
-import base64
-import os
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend  # for loading keys
 from cryptography.fernet import Fernet  # symmetric key encryption
+
 
 TEST_SERVER = '127.0.0.1'
 REAL_SERVER = '???'
@@ -40,12 +40,9 @@ def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT)
     # reply = message.decode().upper().encode()
     # connection_socket.send(reply)
 
-    # Recieve Client Diffie-Hellman Public Key & Salt
-    dh_client_public_bytes, salt = connection_socket.recv(RECV_SIZE).splitlines()
-
-    # Decode values before use
-    dh_client_public_bytes = base64.urlsafe_b64decode(dh_client_public_bytes)
-    salt = base64.urlsafe_b64decode(salt)
+    # Recieve Client Diffie-Hellman Public Key & Salt (split by rightmost newline)
+    dh_client_public_str, salt = connection_socket.recv(RECV_SIZE).decode('utf-8').rsplit('\n', 1)
+    dh_client_public_bytes = dh_client_public_str.encode('utf-8')
 
     dh_client_public_key = serialization.load_pem_public_key(dh_client_public_bytes, None)
 
@@ -57,35 +54,42 @@ def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT)
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
 
-    connection_socket.send(base64.urlsafe_b64encode(dh_server_public_bytes))
+    connection_socket.send(dh_server_public_bytes)
 
     # Use Diffie-Hellman to create shared key
     shared_key = dh_server_private_key.exchange(ec.ECDH(), dh_client_public_key)
     derived_key = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=salt,
+        salt=salt.encode('utf-8'),
         info=b'handshake data'
     ).derive(shared_key)
 
-    fixed_key = base64.urlsafe_b64encode(derived_key)
+    fixed_key = urlsafe_b64encode(derived_key)
     fernet_key = Fernet( fixed_key )
 
     # Recieve Symmetrically Encrypted Name (Name, Signature, Key)
     encrypted_output = connection_socket.recv(RECV_SIZE)
-    name, signature, signing_key = base64.urlsafe_b64decode(fernet_key.decrypt(encrypted_output)).splitlines()
+    decrypted_output = fernet_key.decrypt(encrypted_output).decode('utf-8')
 
-    name = name.decode('utf-8')
-    signature = signature.decode('utf-8')
-    signing_key = signing_key.decode('utf-8')
+    # splits first two items without affecting linebreaks in public key
+    name, raw_signature, signing_public_str = decrypted_output.split('\n', 2)
 
-    print(f"Name: {name}, Signature: {signature}, Signing Key: {signing_key}")
+    signature = urlsafe_b64decode(raw_signature)
+
+    # print(f"Name: {name}, Signature: {signature}, Signing Key: {signing_public_str}")
 
     # Verify Info
-    status = bytes(False)
+    signing_public_key = serialization.load_pem_public_key(signing_public_str.encode('utf-8'))
 
-    # Transmit Success/Failure
-    connection_socket.send(fernet_key.encrypt(status))
+    # Transmit success/failure
+    try:
+        signing_public_key.verify(signature, name.encode('utf-8'), ec.ECDSA(hashes.SHA256()))
+        print("Signature Valid")
+        connection_socket.send(b'\x01')
+    except InvalidSignature as e:
+        print(f"Invalid signature: {e}")
+        connection_socket.send(b'\x00')
 
     return (name, addr)
 
@@ -97,7 +101,9 @@ if __name__ == "__main__":
         name, ip_info = run_connection()
 
         # add value to table
-        name_table += f"{name} @ {ip_info[0]}"
+        name_table.append(f"{name} @ {ip_info[0]}")
 
+        print("\nConnections:")
         for data in name_table:
             print(data)
+        print("\n")
