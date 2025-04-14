@@ -19,7 +19,7 @@ from cryptography_tools import load_private_key
 
 
 TEST_SERVER = '127.0.0.1'
-REAL_SERVER = '???'
+REAL_SERVER = '172.30.115.175'
 
 CLIENT_PRIVATE_KEY = 'private.pem'
 
@@ -99,6 +99,4 @@ def run_connection(name: str, server_ip: str = TEST_SERVER, server_port: int = S
 
 
 if __name__ == "__main__":
-    run_connection("Taylor")
-
-    run_connection("Another person")
+    run_connection("Taylor", REAL_SERVER)
