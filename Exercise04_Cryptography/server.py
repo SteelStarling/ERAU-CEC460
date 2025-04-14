@@ -64,7 +64,7 @@ def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT)
     derived_key = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=None,
+        salt=salt,
         info=b'handshake data'
     ).derive(shared_key)
 
@@ -73,11 +73,11 @@ def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT)
 
     # Recieve Symmetrically Encrypted Name (Name, Signature, Key)
     encrypted_output = connection_socket.recv(RECV_SIZE)
-    name, signature, signing_key = fernet_key.decrypt(encrypted_output).splitlines()
+    name, signature, signing_key = base64.urlsafe_b64decode(fernet_key.decrypt(encrypted_output)).splitlines()
 
-    name = base64.urlsafe_b64decode(name).decode('utf-8')
-    signature = base64.urlsafe_b64decode(signature).decode('utf-8')
-    signing_key = base64.urlsafe_b64decode(signing_key).decode('utf-8')
+    name = name.decode('utf-8')
+    signature = signature.decode('utf-8')
+    signing_key = signing_key.decode('utf-8')
 
     print(f"Name: {name}, Signature: {signature}, Signing Key: {signing_key}")
 

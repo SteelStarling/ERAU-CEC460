@@ -39,6 +39,9 @@ def run_connection(name: str, server_ip: str = TEST_SERVER, server_port: int = S
     # reply = client_socket.recv(RECV_SIZE)
     # print('From Server: ', reply.decode())
 
+    signing_private_key = ec.generate_private_key( ec.SECP384R1() )
+    signing_public_key = signing_private_key.public_key()
+
     # Create Client Diffie-Hellman (DH) Keys
     dh_client_private_key = ec.generate_private_key( ec.SECP384R1() )
     dh_client_public_key = dh_client_private_key.public_key()
@@ -64,7 +67,7 @@ def run_connection(name: str, server_ip: str = TEST_SERVER, server_port: int = S
     derived_key = HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=None,
+        salt=salt,
         info=b'handshake data'
     ).derive(shared_key)
 
@@ -72,16 +75,15 @@ def run_connection(name: str, server_ip: str = TEST_SERVER, server_port: int = S
     fernet_key = Fernet( fixed_key )
 
     # Encrypt Name, Signature, & Key
-    signature = b"potato"
-    signing_key = b"apple"
+    signature = signing_private_key.sign(name.encode('utf-8'), ec.ECDSA(hashes.SHA256()))
+    signing_public_bytes = signing_public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode('utf-8')
 
-    name_sig_key = base64.urlsafe_b64encode(name.encode('utf-8')) \
-                    + b"\n" \
-                    + base64.urlsafe_b64encode(signature) \
-                    + b"\n" \
-                    + base64.urlsafe_b64encode(signing_key)
+    name_sig_key = name + "\n" + signature + "\n" + signing_public_bytes
 
-    fernet_token = fernet_key.encrypt(name_sig_key)
+    fernet_token = fernet_key.encrypt(urlsafe_b64decode(name_sig_key))
 
     # Send Symmetrically Encrypted Info
     client_socket.send(fernet_token)
@@ -95,4 +97,4 @@ def run_connection(name: str, server_ip: str = TEST_SERVER, server_port: int = S
 
 
 if __name__ == "__main__":
-    run_connection("Tay :3")
+    run_connection("Taylor")
