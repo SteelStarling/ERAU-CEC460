@@ -16,7 +16,7 @@ from cryptography.fernet import Fernet  # symmetric key encryption
 
 KEY_LOCATION = "private_key.pem"
 
-def load_private_key(key_path: str = KEY_LOCATION) -> any:
+def load_private_key(key_path: str = KEY_LOCATION) -> ec.EllipticCurvePrivateKey:
     """Loads private key from the path or creates a new key if one is not provided"""
 
     if path.exists(key_path):
