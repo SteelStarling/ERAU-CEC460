@@ -127,5 +127,3 @@ def load_private_key(key_path: str = KEY_LOCATION) -> ec.EllipticCurvePrivateKey
             f.close()
 
     return signing_key
-
-load_private_key()
