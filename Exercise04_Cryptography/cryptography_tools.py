@@ -5,7 +5,7 @@ Class:  CEC460 - Telecom Systems
 Assignment: EX04 - Cryptography
 """
 
-from base64 import urlsafe_b64encode, urlsafe_b64decode
+from base64 import urlsafe_b64encode
 from os import path, urandom
 
 from cryptography.hazmat.primitives import hashes
@@ -127,5 +127,3 @@ def load_private_key(key_path: str = KEY_LOCATION) -> ec.EllipticCurvePrivateKey
             f.close()
 
     return signing_key
-
-load_private_key()
