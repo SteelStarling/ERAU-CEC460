@@ -5,20 +5,21 @@ Class:  CEC460 - Telecom Systems
 Assignment: EX05 - Email
 """
 
-import socket as sock
+import os
 from base64 import urlsafe_b64decode
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.fernet import Fernet  # symmetric key encryption
+from dotenv import load_dotenv
 
 from cryptography_tools import derive_fernet_from_shared_key, private_key_to_public_bytes,\
                             public_str_to_public_key
 
+from email_handler import EmailHandler
 
-TEST_SERVER = '127.0.0.1'
-REAL_SERVER = '???'
+load_dotenv()
 
 SERVER_PORT = 12460
 
@@ -43,25 +44,22 @@ def parse_encrypted_data(encrypted_data: str, fernet_key: Fernet) -> tuple[str, 
     return (name, signature, signing_public_str)
 
 
-def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT) -> tuple:
+def run_connection(email_handler: EmailHandler) -> tuple:
     """Starts a server with the given connection info"""
-    # Open server socket
-    server_socket = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-    server_socket.bind((server_ip, server_port))
-    server_socket.listen(1)
-    print("The server is ready to recieve")
-
-    # accept sockets, but ignore address
-    connection_socket, addr = server_socket.accept()
+    # Listen for emails
+    session_id, email, body = email_handler.receive_email_continuous("Client Info: ")
 
     # Recieve Client Diffie-Hellman Public Key & Salt (split by rightmost newline)
-    dh_client_public_str, salt = connection_socket.recv(RECV_SIZE).decode('utf-8').rsplit('\n', 1)
-    dh_client_public_key = public_str_to_public_key(dh_client_public_str)
+    dh_client_public_str, salt = body.rsplit('\n', 1)
+
+    print(salt)
 
     # Send Server Diffie-Hellman Public Key
     dh_server_private_key = ec.generate_private_key( ec.SECP384R1() )
-    connection_socket.send(
-        private_key_to_public_bytes(dh_server_private_key)
+    email_handler.send_email(
+        email,
+        f"Server Info: {session_id}",
+        private_key_to_public_bytes(dh_server_private_key).decode('utf-8')
     )
 
     # Use Diffie-Hellman to create shared key
@@ -71,37 +69,58 @@ def run_connection(server_ip: str = TEST_SERVER, server_port: int = SERVER_PORT)
         salt
     )
 
+    print('D')
+
     # Recieve Symmetrically Encrypted Data (Name, Signature, Key)
-    encrypted_output = connection_socket.recv(RECV_SIZE)
+    encrypted_output = email_handler.receive_email_continuous(f"Encrypted Info: {session_id}")[-1]
+    encrypted_bytes = encrypted_output.encode('utf-8')
 
     # parse into segments
-    name, signature, signing_public_str = parse_encrypted_data(encrypted_output, fernet_key)
+    name, signature, signing_public_str = parse_encrypted_data(encrypted_bytes, fernet_key)
+
+    print('E')
 
     # print(f"Name: {name}, Signature: {signature}, Signing Key: {signing_public_str}")
 
     # Verify Info
     signing_public_key = public_str_to_public_key(signing_public_str)
 
+    print('F')
+
     # Transmit success/failure
+    connection_validity = b'\x00'
     try:
         signing_public_key.verify(signature, name.encode('utf-8'), ec.ECDSA(hashes.SHA256()))
         print("Signature Valid")
-        connection_socket.send(b'\x01')
+        connection_validity = b'\x01'
     except InvalidSignature as e:
         print(f"Invalid signature: {e}")
-        connection_socket.send(b'\x00')
 
-    return (name, addr)
+    print('G')
+
+    email_handler.send_email(
+        email,
+        f"Verification Info: {session_id}",
+        connection_validity.decode('utf-8')
+    )
+
+    return (name, email)
 
 
 if __name__ == "__main__":
+    # get all OS values
+    server_email = os.environ["SERVER_EMAIL"]
+    server_password = os.environ["SERVER_PASSWORD"]
+
+    email_handler = EmailHandler(server_email, server_password)
+
     name_table = []
 
     while True:
-        name, ip_info = run_connection()
+        name, email = run_connection(email_handler)
 
         # add value to table
-        name_table.append(f"{name} @ {ip_info[0]}")
+        name_table.append(f"{name} @ {email}")
 
         print("\nConnections:")
         for data in name_table:

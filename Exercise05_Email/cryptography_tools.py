@@ -5,7 +5,7 @@ Class:  CEC460 - Telecom Systems
 Assignment: EX04 - Cryptography
 """
 
-from base64 import urlsafe_b64encode, urlsafe_b64decode
+from base64 import urlsafe_b64encode
 from os import path, urandom
 
 from cryptography.hazmat.primitives import hashes
@@ -18,12 +18,12 @@ from cryptography.fernet import Fernet  # symmetric key encryption
 KEY_LOCATION = "private_key.pem"
 
 
-def generate_salt() -> str:
+def generate_salt(size: int = 24) -> str:
     """Generates and returns random salt for use"""
-    return urlsafe_b64encode(urandom(24)).decode('utf-8')
+    return urlsafe_b64encode(urandom(size)).decode('utf-8')
 
 
-def private_key_to_public_bytes(private_key: ec.EllipticCurvePrivateKey) -> str:
+def private_key_to_public_bytes(private_key: ec.EllipticCurvePrivateKey) -> bytes:
     """Converts a private key to its public key in string format"""
     # get public key
     public_key = private_key.public_key()
