@@ -1,7 +1,9 @@
-from imaplib import IMAP4_SSL
-import smtplib
 from email.message import EmailMessage
 from email.header import decode_header
+from email.mime.text import MIMEText
+from email import charset
+from imaplib import IMAP4_SSL
+import smtplib
 from time import sleep
 
 
@@ -63,12 +65,14 @@ class EmailHandler:
 
                 subject = imap_server.fetch(id_num, '(RFC822.SIZE BODY[HEADER.FIELDS (SUBJECT)])')[1][0][1]
                 sender = imap_server.fetch(id_num, '(RFC822.SIZE BODY[HEADER.FIELDS (FROM)])')[1][0][1]
-                body = imap_server.fetch(id_num, '(UID BODY[TEXT])')[1][0][1]
+                body = imap_server.fetch(id_num, '(RFC822.SIZE UID BODY[TEXT])')[1][0][1]
 
                 # Get session id (always after "Info: ", followed by some newlines)
                 session_id = subject.rsplit(b'Info: ', 1)[1].rstrip().decode('utf-8')
                 sender = sender.rsplit(b'From: ', 1)[1].rstrip().decode('utf-8')
                 body = body.rstrip().decode('utf-8')
+                
+                # Use REGEX for now, remove 
 
                 # Mark retrieved email as read
                 imap_server.store(id_num, '+FLAGS', '\\Seen')

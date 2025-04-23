@@ -7,6 +7,7 @@ Assignment: EX05 - Email
 
 import os
 from base64 import urlsafe_b64decode
+from imaplib import IMAP4_SSL
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
