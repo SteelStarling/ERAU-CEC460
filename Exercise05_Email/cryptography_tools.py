@@ -70,6 +70,8 @@ def derive_fernet_from_shared_key(private_key: ec.EllipticCurvePrivateKey, \
         info=b'handshake data'
     ).derive(exchanged_key)
 
+    print(f"Derived Key: {derived_key}")
+
     # encode and convert to Fernet
     fernet_key = Fernet( urlsafe_b64encode(derived_key) )
     return fernet_key

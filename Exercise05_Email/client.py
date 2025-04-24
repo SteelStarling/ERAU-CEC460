@@ -51,7 +51,6 @@ def run_connection(name: str, email_handler: EmailHandler, server_email: str) ->
         message_str
     )
 
-    print('A')
     print(salt)
 
     # Recieve Server Diffie-Hellman Public Key
@@ -62,18 +61,12 @@ def run_connection(name: str, email_handler: EmailHandler, server_email: str) ->
     # Encrypt Name, Signature, & Key
     signature = generate_signature(signing_private_key, name)
 
-    print('B')
-
     # convert signing key to bytes
     signing_public_bytes = public_key_to_bytes(signing_private_key.public_key())
-
-    print('C')
 
     name_sig_key = name.encode('utf-8') + b"\n" + signature + b"\n" + signing_public_bytes
 
     fernet_token = fernet_key.encrypt(name_sig_key).decode('utf-8')
-
-    print('D')
 
     # Send Symmetrically Encrypted Info
     email_handler.send_email(
@@ -81,8 +74,6 @@ def run_connection(name: str, email_handler: EmailHandler, server_email: str) ->
         f"Encrypted Info: {session_id}",
         fernet_token
     )
-
-    print('E')
 
     # Recieve Success/Failure
     validity = email_handler.receive_email_continuous(f"Verification Info: {session_id}")[-1]

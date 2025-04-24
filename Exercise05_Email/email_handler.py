@@ -28,13 +28,12 @@ class EmailHandler:
 
     def send_email(self, recipient: str, subject: str, body: str) -> None:
         """Sends the given email to the following recipient"""
-        msg = EmailMessage()
+        msg = MIMEText(body)
 
         # create given message
         msg['Subject'] = subject
         msg['From']    = self.account_email
         msg['To']      = recipient
-        msg.set_content(body)
 
         print(msg.as_string())
         # access email server
